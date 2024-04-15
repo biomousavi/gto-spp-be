@@ -45,7 +45,7 @@ const updatePokerSchema = z.object({
   issueManagers: z.enum(["ALL"]).or(z.array(z.string())).optional(),
   system: z.enum(["FIBONACCI", "T-SHIRT", "POWERS_OF_TWO"]).optional(),
   name: z.string().max(24).optional(),
-  link: z.string().max(24).optional(),
+  link: z.string().max(24),
 });
 
 app.post("/new", zValidator("json", pokerSchema), async (ctx) => {
@@ -87,17 +87,18 @@ app.get(
 );
 app.put("/pokers/:link", zValidator("json", updatePokerSchema), async (ctx) => {
   try {
-    const data = ctx.req.valid("json");
+    const { autoReveal, name, showAverage, system, link } =
+      ctx.req.valid("json");
 
     const adapter = new PrismaD1(ctx.env.DB);
     const prisma = new PrismaClient({ adapter });
 
-    const { id } = await prisma.poker.findFirstOrThrow({
-      where: { link: data.link! },
-    });
-    console.log(data);
+    const { id } = await prisma.poker.findFirstOrThrow({ where: { link } });
 
-    const poker = await prisma.poker.update({ where: { id }, data });
+    const poker = await prisma.poker.update({
+      where: { id },
+      data: { autoReveal, name, showAverage, system },
+    });
 
     return ctx.json(poker);
   } catch (_) {
