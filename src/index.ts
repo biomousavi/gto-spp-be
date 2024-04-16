@@ -108,14 +108,20 @@ app.put("/pokers/:link", zValidator("json", updatePokerSchema), async (ctx) => {
 
 app.get(
   "/auth/token",
-  zValidator("query", z.object({ clientId: z.string() })),
+  zValidator("query", z.object({ id: z.string(), link: z.string() })),
   async (ctx) => {
     try {
-      const { clientId } = ctx.req.valid("query");
+      const { id,link } = ctx.req.valid("query");
+
+      const adapter = new PrismaD1(ctx.env.DB);
+      const prisma = new PrismaClient({ adapter });
+  
+      await prisma.poker.findFirstOrThrow({ where: { link } });
+
       const secret = new TextEncoder().encode("bio_secret_999123zZ");
       const alg = "HS256";
 
-      const token = await new SignJWT({ sub: clientId })
+      const token = await new SignJWT({ sub: id })
         .setProtectedHeader({ alg })
         .sign(secret);
 
@@ -127,20 +133,18 @@ app.get(
   }
 );
 
+
 app.get(
   "/subscription/token",
-  zValidator("query", z.object({ link: z.string(), clientId: z.string() })),
+  zValidator("query", z.object({ link: z.string(), id: z.string() })),
   async (ctx) => {
     try {
-      const { link, clientId } = ctx.req.valid("query");
+      const { link, id } = ctx.req.valid("query");
 
       const secret = new TextEncoder().encode("bio_secret_999123zZ");
       const alg = "HS256";
 
-      const token = await new SignJWT({
-        sub: clientId,
-        channel: `poker:${link}`,
-      })
+      const token = await new SignJWT({ sub: id, channel: `poker:${link}` })
         .setProtectedHeader({ alg })
         .sign(secret);
 
