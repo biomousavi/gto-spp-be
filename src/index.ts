@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import * as Ably from "ably";
 import { cors } from "hono/cors";
 import { nanoid } from "nanoid";
 import { z } from "zod";
@@ -14,10 +13,6 @@ type Bindings = {
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
-
-const rest = new Ably.Rest(
-  "PfP6Tw.y905Hw:ZDdSKXsEFqZ2G4wHoXbwws-14GuyuFv2I7IMIR-MvMc"
-);
 
 // TODO: include domains
 app.use("*", cors());
@@ -34,22 +29,25 @@ const pokerSchema = z.object({
   revealers: z.enum(["ALL"]).or(z.array(z.string())),
   showAverage: z.boolean(),
   autoReveal: z.boolean(),
+  anonymousVoting: z.boolean(),
   issueManagers: z.enum(["ALL"]).or(z.array(z.string())),
   system: z.enum(["FIBONACCI", "T-SHIRT", "POWERS_OF_TWO"]),
-  name: z.string().max(24),
+  name: z.string().max(64),
 });
 const updatePokerSchema = z.object({
   revealers: z.enum(["ALL"]).or(z.array(z.string())).optional(),
   showAverage: z.boolean().optional(),
   autoReveal: z.boolean().optional(),
+  anonymousVoting: z.boolean().optional(),
   issueManagers: z.enum(["ALL"]).or(z.array(z.string())).optional(),
   system: z.enum(["FIBONACCI", "T-SHIRT", "POWERS_OF_TWO"]).optional(),
-  name: z.string().max(24).optional(),
+  name: z.string().max(64).optional(),
   link: z.string().max(24),
 });
 
 app.post("/new", zValidator("json", pokerSchema), async (ctx) => {
-  const { autoReveal, name, showAverage, system } = ctx.req.valid("json");
+  const { autoReveal, name, showAverage, system, anonymousVoting } =
+    ctx.req.valid("json");
 
   const adapter = new PrismaD1(ctx.env.DB);
   const prisma = new PrismaClient({ adapter });
@@ -61,6 +59,7 @@ app.post("/new", zValidator("json", pokerSchema), async (ctx) => {
       autoReveal,
       showAverage,
       link: nanoid(),
+      anonymousVoting,
     },
   });
 
@@ -87,7 +86,7 @@ app.get(
 );
 app.put("/pokers/:link", zValidator("json", updatePokerSchema), async (ctx) => {
   try {
-    const { autoReveal, name, showAverage, system, link } =
+    const { autoReveal, name, showAverage, system, link, anonymousVoting } =
       ctx.req.valid("json");
 
     const adapter = new PrismaD1(ctx.env.DB);
@@ -97,7 +96,7 @@ app.put("/pokers/:link", zValidator("json", updatePokerSchema), async (ctx) => {
 
     const poker = await prisma.poker.update({
       where: { id },
-      data: { autoReveal, name, showAverage, system },
+      data: { autoReveal, name, showAverage, system, anonymousVoting },
     });
 
     return ctx.json(poker);
@@ -111,11 +110,11 @@ app.get(
   zValidator("query", z.object({ id: z.string(), link: z.string() })),
   async (ctx) => {
     try {
-      const { id,link } = ctx.req.valid("query");
+      const { id, link } = ctx.req.valid("query");
 
       const adapter = new PrismaD1(ctx.env.DB);
       const prisma = new PrismaClient({ adapter });
-  
+
       await prisma.poker.findFirstOrThrow({ where: { link } });
 
       const secret = new TextEncoder().encode("bio_secret_999123zZ");
@@ -132,7 +131,6 @@ app.get(
     }
   }
 );
-
 
 app.get(
   "/subscription/token",

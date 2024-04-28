@@ -18,6 +18,7 @@ model Poker {
   system      String
   autoReveal  Boolean
   showAverage Boolean
+  anonymousVoting Boolean?
   // revealers 
   // issueManagers
   // createdAt

@@ -7,7 +7,6 @@
     "@hono/zod-validator": "^0.2.1",
     "@prisma/adapter-d1": "^5.12.1",
     "@prisma/client": "^5.12.1",
-    "ably": "^2.0.1",
     "hono": "^4.2.2",
     "jose": "^5.2.4",
     "nanoid": "^5.0.7",
