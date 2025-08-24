@@ -1,3 +1,12 @@
+# create db if not exists
+npx wrangler d1 create poker-d1
+
+# run migrations
+npx wrangler d1 migrations apply poker-d1 --local
+npx wrangler d1 migrations apply poker-d1 --remote
+
+
+
 # add new migration
 1) - npx wrangler d1 migrations create poker-d1 new_migration
 
@@ -10,6 +19,6 @@ npx prisma migrate diff \
   --script \
   --output migrations/0002_create_post_table.sql
 
-3) - npx wrangler d1 migrations apply prod-prisma-d1-app --local
-4) - npx wrangler d1 migrations apply prod-prisma-d1-app --remote
+3) - npx wrangler d1 migrations apply poker-d1 --local
+4) - npx wrangler d1 migrations apply poker-d1 --remote
 5) - npx prisma generate
